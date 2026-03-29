@@ -1,0 +1,141 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id             String   @id @default(uuid())
+  name           String
+  country        String
+  currencyCode   String
+  currencySymbol String
+  createdAt      DateTime @default(now())
+
+  users     User[]
+  expenses  Expense[]
+  workflows ApprovalWorkflow[]
+  rules     ApprovalRule[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  companyId    String
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("employee") // admin, manager, employee
+  managerId    String?
+  createdAt    DateTime @default(now())
+
+  company  Company @relation(fields: [companyId], references: [id])
+  manager  User?   @relation("ManagerRelation", fields: [managerId], references: [id])
+  reports  User[]  @relation("ManagerRelation")
+
+  submittedExpenses Expense[]        @relation("SubmittedExpenses")
+  approvalRecords   ApprovalRecord[]
+  approvalSteps     ApprovalStep[]
+  specificRules     ApprovalRule[]   @relation("SpecificApprover")
+}
+
+model Expense {
+  id               String   @id @default(uuid())
+  companyId        String
+  userId           String
+  amount           Float
+  currencyCode     String
+  convertedAmount  Float
+  exchangeRate     Float
+  category         String   // travel, meals, office, transport, other
+  description      String
+  receiptPath      String?
+  expenseDate      String
+  status           String   @default("pending") // pending, in_review, approved, rejected
+  isManagerApprover Boolean @default(true)
+  workflowId       String?
+  currentStep      Int      @default(0)
+  createdAt        DateTime @default(now())
+
+  company  Company          @relation(fields: [companyId], references: [id])
+  user     User             @relation("SubmittedExpenses", fields: [userId], references: [id])
+  workflow ApprovalWorkflow? @relation(fields: [workflowId], references: [id])
+  records  ApprovalRecord[]
+  lines    ExpenseLine[]
+}
+
+model ExpenseLine {
+  id          String @id @default(uuid())
+  expenseId   String
+  description String
+  amount      Float
+  category    String
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+}
+
+model ApprovalWorkflow {
+  id        String   @id @default(uuid())
+  companyId String
+  name      String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  company  Company        @relation(fields: [companyId], references: [id])
+  steps    ApprovalStep[]
+  expenses Expense[]
+  rules    ApprovalRule[]
+}
+
+model ApprovalStep {
+  id               String   @id @default(uuid())
+  workflowId       String
+  stepOrder        Int
+  approverId       String
+  approverRoleLabel String
+  createdAt        DateTime @default(now())
+
+  workflow ApprovalWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  approver User              @relation(fields: [approverId], references: [id])
+  records  ApprovalRecord[]
+}
+
+model ApprovalRule {
+  id                  String  @id @default(uuid())
+  companyId           String
+  ruleType            String  // percentage, specific_approver, hybrid
+  percentageThreshold Float?
+  specificApproverId  String?
+  workflowId          String
+
+  company          Company          @relation(fields: [companyId], references: [id])
+  specificApprover User?            @relation("SpecificApprover", fields: [specificApproverId], references: [id])
+  workflow         ApprovalWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+}
+
+model ApprovalRecord {
+  id         String    @id @default(uuid())
+  expenseId  String
+  stepId     String
+  approverId String
+  status     String    @default("pending") // pending, approved, rejected
+  comments   String?
+  actedAt    DateTime?
+
+  expense  Expense      @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  step     ApprovalStep @relation(fields: [stepId], references: [id])
+  approver User         @relation(fields: [approverId], references: [id])
+}
+
+model ExchangeRateCache {
+  id           String   @id @default(uuid())
+  baseCurrency String
+  rates        String   // JSON string of rates
+  fetchedAt    DateTime @default(now())
+
+  @@unique([baseCurrency])
+}
