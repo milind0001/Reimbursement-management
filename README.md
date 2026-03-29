@@ -2,6 +2,11 @@
 
 Full-stack reimbursement platform built for hackathon evaluation. It covers company onboarding, role-based access, expense submission, multi-step approvals, OCR receipt parsing, and currency conversion.
 
+## Live Deployment
+
+- Frontend: https://reimbursement-management.netlify.app/
+- Backend health endpoint: https://reimbursement-management-v28e.onrender.com/api/health
+
 ## What Is Implemented
 
 ### Authentication and Company Onboarding
