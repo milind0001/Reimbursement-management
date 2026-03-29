@@ -4,8 +4,8 @@ Full-stack reimbursement platform built for hackathon evaluation. It covers comp
 
 ## Live Deployment
 
-- Frontend: https://reimbursement-management.netlify.app/
-- Backend health endpoint: https://reimbursement-management-v28e.onrender.com/api/health
+- Frontend: https://reimbursement-management.netlify.app
+- Backend health endpoint: https://reimbursement-management-v28e.onrender.com
 
 ## What Is Implemented
 
